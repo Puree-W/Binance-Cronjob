@@ -97,7 +97,51 @@ python -m src.main --futures
 
 Stop with `Ctrl+C` — it finishes the current tick and exits cleanly.
 
-## 6. Docker (cloud deploy)
+## 6. Deploy on Fly.io (recommended free cloud)
+
+Fly.io runs the Dockerfile as a 24/7 worker. API keys live in Fly's encrypted
+secrets — never committed to the repo.
+
+```bash
+# 1. Install flyctl
+#    Windows: iwr https://fly.io/install.ps1 -useb | iex
+#    Mac:     brew install flyctl
+#    Linux:   curl -L https://fly.io/install.sh | sh
+
+# 2. Login
+flyctl auth login
+
+# 3. Pick a unique app name and create the app (does NOT deploy yet)
+#    Either edit `app = "..."` in fly.toml first, or:
+flyctl launch --no-deploy --copy-config --name <your-unique-name>
+
+# 4. Set secrets (replace with your testnet keys)
+flyctl secrets set \
+  BINANCE_SPOT_API_KEY=xxx \
+  BINANCE_SPOT_API_SECRET=xxx \
+  BINANCE_FUTURES_API_KEY=xxx \
+  BINANCE_FUTURES_API_SECRET=xxx \
+  USE_TESTNET=true
+
+# 5. Deploy
+flyctl deploy
+
+# 6. Watch logs
+flyctl logs
+
+# Useful ops
+flyctl status                  # is it running?
+flyctl secrets list            # what secrets are set (values hidden)
+flyctl scale count 1           # ensure exactly 1 VM
+flyctl ssh console             # shell into the running VM
+flyctl apps destroy <name>     # tear it down
+```
+
+**Updating config / strategy:** edit `config.yaml`, commit, then `flyctl deploy` again. The new image rolls out with the new config.
+
+**Cost:** the `shared-cpu-1x / 256mb` VM in `fly.toml` is the cheapest size. Fly used to include this in a free allowance; current pricing is roughly $2/mo. Confirm at https://fly.io/docs/about/pricing/
+
+## 7. Docker (local or other cloud)
 
 ```bash
 docker compose build

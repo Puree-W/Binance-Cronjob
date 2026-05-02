@@ -33,7 +33,14 @@ class Exchange:
             secret = os.getenv("BINANCE_FUTURES_API_SECRET", "")
 
         if not key or not secret:
-            raise RuntimeError(f"Missing API credentials for {market}. Set them in .env")
+            env_key = f"BINANCE_{market.upper()}_API_KEY"
+            env_secret = f"BINANCE_{market.upper()}_API_SECRET"
+            raise RuntimeError(
+                f"Missing API credentials for {market}. "
+                f"Expected env vars {env_key} and {env_secret}. "
+                f"Local: set in .env file. "
+                f"Fly.io: run `flyctl secrets set {env_key}=... {env_secret}=...`"
+            )
 
         self.client = Client(key, secret, testnet=use_testnet)
 

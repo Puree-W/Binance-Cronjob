@@ -9,3 +9,4 @@ logs
 README.md
 .idea
 .vscode
+fly.toml

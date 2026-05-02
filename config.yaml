@@ -22,7 +22,7 @@ symbols:
 interval: "15m"
 
 # Loop tick in seconds (how often the bot re-evaluates).
-loop_seconds: 60
+loop_seconds: 900
 
 # Verbose logging — when true, prints indicator values + signals per symbol
 # every tick. When false (default), only meaningful events (trades, errors,
@@ -33,7 +33,7 @@ verbose: true
 # SPOT bot
 # ---------------------------------------------------------
 spot:
-  enabled: true
+  enabled: false
   # Strategy options:
   #   rsi | ema | bb | macd          → single indicator
   #   combined                       → RSI + EMA must agree

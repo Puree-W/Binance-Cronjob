@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/
 COPY config.yaml ./config.yaml
-COPY .env ./.env
 
 RUN useradd -m -u 1000 trader && chown -R trader:trader /app
 USER trader
