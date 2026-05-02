@@ -1,0 +1,22 @@
+services:
+  spot:
+    build: .
+    image: binance-bot:latest
+    container_name: binance-spot
+    restart: unless-stopped
+    env_file: .env
+    command: ["python", "-m", "src.main", "--spot"]
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./logs:/app/logs
+
+  futures:
+    build: .
+    image: binance-bot:latest
+    container_name: binance-futures
+    restart: unless-stopped
+    env_file: .env
+    command: ["python", "-m", "src.main", "--futures"]
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./logs:/app/logs

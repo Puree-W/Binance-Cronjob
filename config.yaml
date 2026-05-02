@@ -1,0 +1,96 @@
+# =========================================================
+# Binance Auto-Trading Bot — config
+# Edit values here. Keys live in .env (never commit them).
+# =========================================================
+
+# WARNING: defaults below match what the user requested.
+# SL 50% / TP 20% is a 2.5:1 RISK to reward — losing trades
+# cost 2.5x more than winners. Adjust before going live.
+risk:
+  stop_loss_pct: 0.20         # 50% adverse move from entry
+  take_profit_pct: 0.20       # 20% favorable move from entry
+  order_size_usdt: 100        # notional per trade (testnet)
+  max_open_positions: 2       # per bot
+  daily_loss_limit_pct: 0.05  # 5% of starting balance — kill-switch
+
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+
+# Candle interval used for indicator calculation.
+# Options: 1m, 3m, 5m, 15m, 1h, 4h, 1d
+interval: "15m"
+
+# Loop tick in seconds (how often the bot re-evaluates).
+loop_seconds: 60
+
+# Verbose logging — when true, prints indicator values + signals per symbol
+# every tick. When false (default), only meaningful events (trades, errors,
+# kill-switch) are logged plus a short tick heartbeat.
+verbose: true
+
+# ---------------------------------------------------------
+# SPOT bot
+# ---------------------------------------------------------
+spot:
+  enabled: true
+  # Strategy options:
+  #   rsi | ema | bb | macd          → single indicator
+  #   combined                       → RSI + EMA must agree
+  #   majority                       → 3 of 4 (RSI/EMA/BB/MACD) agree
+  #   confluence                     → all 4 must agree (rare, strong)
+  #   grid                           → independent grid mode
+  strategy: "combined"
+
+  rsi:
+    period: 14
+    oversold: 30        # buy when RSI crosses up through 30
+    overbought: 70      # sell when RSI crosses down through 70
+
+  ema:
+    fast: 9
+    slow: 21            # buy on fast crossing above slow, sell on cross below
+
+  bb:
+    period: 20          # John Bollinger's original — 20-period MA
+    std_dev: 2.0        # ±2 standard deviations covers ~95% of price action
+
+  macd:
+    fast: 12            # Gerald Appel's 1979 classic settings —
+    slow: 26            # default on every charting platform
+    signal: 9
+
+  grid:
+    # Grid is independent of RSI/EMA. It places limit buys below
+    # and limit sells above the current price at fixed % steps.
+    levels: 5            # number of grid levels each side
+    step_pct: 0.005      # 0.5% between levels
+    quote_per_level: 50  # USDT per grid level
+
+# ---------------------------------------------------------
+# FUTURES bot (USDT-M perpetuals)
+# ---------------------------------------------------------
+futures:
+  enabled: true
+  # Strategy options: rsi | ema | bb | macd | combined | majority | confluence
+  strategy: "majority"
+  leverage: 10
+  margin_type: "ISOLATED"  # ISOLATED or CROSSED
+
+  rsi:
+    period: 12
+    oversold: 40
+    overbought: 60
+
+  ema:
+    fast: 9
+    slow: 21
+
+  bb:
+    period: 20
+    std_dev: 2.0
+
+  macd:
+    fast: 12
+    slow: 26
+    signal: 9
