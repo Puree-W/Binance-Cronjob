@@ -50,6 +50,7 @@ class Exchange:
             self.client.FUTURES_URL = FUTURES_TESTNET_URL + "/fapi"
 
         self._symbol_filters: dict[str, dict] = {}
+        self._last_kline_close: dict[str, pd.Timestamp] = {}  # stale-data guard
 
     # ---------- market data ----------
     @retry(
@@ -71,6 +72,23 @@ class Exchange:
         for c in ("open", "high", "low", "close", "volume"):
             df[c] = df[c].astype(float)
         df["open_time"] = pd.to_datetime(df["open_time"], unit="ms")
+
+        # Stale-data guard: if the last closed candle is the same as the
+        # previous call, the exchange returned a cached response — retry once.
+        last_closed = df["open_time"].iloc[-2]
+        cache_key = f"{symbol}_{interval}"
+        if self._last_kline_close.get(cache_key) == last_closed:
+            import time as _time
+            _time.sleep(2)
+            if self.market == "spot":
+                raw = self.client.get_klines(symbol=symbol, interval=interval, limit=limit)
+            else:
+                raw = self.client.futures_klines(symbol=symbol, interval=interval, limit=limit)
+            df = pd.DataFrame(raw, columns=cols)
+            for c in ("open", "high", "low", "close", "volume"):
+                df[c] = df[c].astype(float)
+            df["open_time"] = pd.to_datetime(df["open_time"], unit="ms")
+        self._last_kline_close[cache_key] = df["open_time"].iloc[-2]
         return df
 
     def get_price(self, symbol: str) -> float:
@@ -160,25 +178,25 @@ class Exchange:
 
     def futures_stop_market(self, symbol: str, side: str, stop_price: float) -> dict:
         stop_price = self.quantize_price(symbol, stop_price)
+        # NOTE: closePosition=True must NOT include timeInForce — Binance rejects it
         return self.client.futures_create_order(
             symbol=symbol,
             side=side,
             type="STOP_MARKET",
             stopPrice=str(stop_price),
-            closePosition=True,
-            timeInForce="GTC",
+            closePosition="true",
             workingType="MARK_PRICE",
         )
 
     def futures_take_profit_market(self, symbol: str, side: str, stop_price: float) -> dict:
         stop_price = self.quantize_price(symbol, stop_price)
+        # NOTE: closePosition=True must NOT include timeInForce — Binance rejects it
         return self.client.futures_create_order(
             symbol=symbol,
             side=side,
             type="TAKE_PROFIT_MARKET",
             stopPrice=str(stop_price),
-            closePosition=True,
-            timeInForce="GTC",
+            closePosition="true",
             workingType="MARK_PRICE",
         )
 

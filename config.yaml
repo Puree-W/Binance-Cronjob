@@ -3,12 +3,9 @@
 # Edit values here. Keys live in .env (never commit them).
 # =========================================================
 
-# WARNING: defaults below match what the user requested.
-# SL 50% / TP 20% is a 2.5:1 RISK to reward — losing trades
-# cost 2.5x more than winners. Adjust before going live.
 risk:
-  stop_loss_pct: 0.20         # 50% adverse move from entry
-  take_profit_pct: 0.20       # 20% favorable move from entry
+  stop_loss_pct: 0.05         # 5% — reachable with 10x leverage (liquidation ~10%)
+  take_profit_pct: 0.10       # 10% — R:R = 1:2 (ได้เปรียบ)
   order_size_usdt: 100        # notional per trade (testnet)
   max_open_positions: 2       # per bot
   daily_loss_limit_pct: 0.05  # 5% of starting balance — kill-switch
@@ -21,12 +18,10 @@ symbols:
 # Options: 1m, 3m, 5m, 15m, 1h, 4h, 1d
 interval: "15m"
 
-# Loop tick in seconds (how often the bot re-evaluates).
+# Loop tick in seconds — ควรตรงกับ interval (15m = 900s)
 loop_seconds: 900
 
-# Verbose logging — when true, prints indicator values + signals per symbol
-# every tick. When false (default), only meaningful events (trades, errors,
-# kill-switch) are logged plus a short tick heartbeat.
+# Verbose logging — true = แสดง indicator ทุก tick, false = แสดงเฉพาะ trade/error
 verbose: true
 
 # ---------------------------------------------------------
@@ -35,62 +30,58 @@ verbose: true
 spot:
   enabled: false
   # Strategy options:
-  #   rsi | ema | bb | macd          → single indicator
-  #   combined                       → RSI + EMA must agree
-  #   majority                       → 3 of 4 (RSI/EMA/BB/MACD) agree
-  #   confluence                     → all 4 must agree (rare, strong)
-  #   grid                           → independent grid mode
-  strategy: "combined"
+  #   supertrend | rsi | bb | ema   → single indicator
+  #   combined                      → RSI + EMA (legacy)
+  #   majority                      → 2/3: Supertrend + RSI + BB  ← recommended
+  #   confluence                    → 3/3: Supertrend + RSI + BB  ← strictest
+  #   grid                          → grid mode (independent of signals)
+  strategy: "majority"
+
+  supertrend:
+    period: 10        # ATR period — มาตรฐานสากล
+    multiplier: 3.0   # ยิ่งสูง = band กว้าง = สัญญาณช้า noise น้อย
 
   rsi:
     period: 14
-    oversold: 30        # buy when RSI crosses up through 30
-    overbought: 70      # sell when RSI crosses down through 70
-
-  ema:
-    fast: 9
-    slow: 21            # buy on fast crossing above slow, sell on cross below
+    oversold: 30      # buy when RSI crosses up through 30
+    overbought: 70    # sell when RSI crosses down through 70
 
   bb:
-    period: 20          # John Bollinger's original — 20-period MA
-    std_dev: 2.0        # ±2 standard deviations covers ~95% of price action
+    period: 20        # John Bollinger's original
+    std_dev: 2.0      # ±2σ ครอบคลุม ~95% ของราคา
 
-  macd:
-    fast: 12            # Gerald Appel's 1979 classic settings —
-    slow: 26            # default on every charting platform
-    signal: 9
+  ema:                # ใช้ standalone mode เท่านั้น (strategy: "ema")
+    fast: 9
+    slow: 21
 
   grid:
-    # Grid is independent of RSI/EMA. It places limit buys below
-    # and limit sells above the current price at fixed % steps.
-    levels: 5            # number of grid levels each side
-    step_pct: 0.005      # 0.5% between levels
-    quote_per_level: 50  # USDT per grid level
+    levels: 5
+    step_pct: 0.005
+    quote_per_level: 50
 
 # ---------------------------------------------------------
 # FUTURES bot (USDT-M perpetuals)
 # ---------------------------------------------------------
 futures:
   enabled: true
-  # Strategy options: rsi | ema | bb | macd | combined | majority | confluence
+  # Strategy options: supertrend | rsi | bb | ema | combined | majority | confluence
   strategy: "majority"
   leverage: 10
-  margin_type: "ISOLATED"  # ISOLATED or CROSSED
+  margin_type: "ISOLATED"
+
+  supertrend:
+    period: 10
+    multiplier: 3.0
 
   rsi:
     period: 12
     oversold: 40
     overbought: 60
 
-  ema:
-    fast: 9
-    slow: 21
-
   bb:
     period: 20
     std_dev: 2.0
 
-  macd:
-    fast: 12
-    slow: 26
-    signal: 9
+  ema:                # ใช้ standalone mode เท่านั้น
+    fast: 9
+    slow: 21

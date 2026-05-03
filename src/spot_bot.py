@@ -75,10 +75,9 @@ class SpotBot:
             if d:
                 self.log.info(
                     f"{symbol} px={price:.2f} sig={sig} "
-                    f"RSI={d['rsi']:.1f} EMA{self.spot_cfg['ema']['fast']}={d['ema_fast']:.2f} "
-                    f"EMA{self.spot_cfg['ema']['slow']}={d['ema_slow']:.2f} "
-                    f"BB[{d['bb_lower']:.2f}..{d['bb_upper']:.2f}] "
-                    f"MACD={d['macd']:.3f}/{d['macd_signal']:.3f}"
+                    f"ST={d['st_dir'].upper()}({d['st_val']:.2f}) "
+                    f"RSI={d['rsi']:.1f} "
+                    f"BB[{d['bb_lower']:.2f}..{d['bb_upper']:.2f}]"
                 )
 
         pos = self.positions.get(symbol)

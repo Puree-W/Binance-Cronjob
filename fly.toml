@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for binance-demo-cronjob on 2026-05-02T20:35:08+07:00
+# fly.toml app configuration file generated for binance-demo-cronjob on 2026-05-02T21:31:17+07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -24,6 +24,7 @@ primary_region = 'sin'
 
 [[vm]]
   size = 'shared-cpu-1x'
-  memory = '512mb'
+  memory = '256mb'
+  cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 512
+  memory_mb = 256
