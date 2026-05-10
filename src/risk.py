@@ -22,6 +22,19 @@ def take_profit_price(entry: float, tp_pct: float, side: str) -> float:
     return entry * (1 - tp_pct)
 
 
+def stop_loss_price_atr(entry: float, atr: float, mult: float, side: str) -> float:
+    """ATR-multiple stop. Adapts to per-symbol volatility."""
+    if side == "BUY":
+        return entry - mult * atr
+    return entry + mult * atr
+
+
+def take_profit_price_atr(entry: float, atr: float, mult: float, side: str) -> float:
+    if side == "BUY":
+        return entry + mult * atr
+    return entry - mult * atr
+
+
 def position_qty(quote_amount: float, price: float) -> float:
     return quote_amount / price
 

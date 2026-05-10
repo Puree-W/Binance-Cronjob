@@ -176,27 +176,29 @@ class Exchange:
             symbol=symbol, side=side, type="MARKET", quantity=qty
         )
 
-    def futures_stop_market(self, symbol: str, side: str, stop_price: float) -> dict:
+    def futures_stop_market(self, symbol: str, side: str, stop_price: float, qty: float) -> dict:
         stop_price = self.quantize_price(symbol, stop_price)
-        # NOTE: closePosition=True must NOT include timeInForce — Binance rejects it
+        qty = self.quantize_qty(symbol, qty)
         return self.client.futures_create_order(
             symbol=symbol,
             side=side,
             type="STOP_MARKET",
             stopPrice=str(stop_price),
-            closePosition="true",
+            quantity=qty,
+            reduceOnly="true",
             workingType="MARK_PRICE",
         )
 
-    def futures_take_profit_market(self, symbol: str, side: str, stop_price: float) -> dict:
+    def futures_take_profit_market(self, symbol: str, side: str, stop_price: float, qty: float) -> dict:
         stop_price = self.quantize_price(symbol, stop_price)
-        # NOTE: closePosition=True must NOT include timeInForce — Binance rejects it
+        qty = self.quantize_qty(symbol, qty)
         return self.client.futures_create_order(
             symbol=symbol,
             side=side,
             type="TAKE_PROFIT_MARKET",
             stopPrice=str(stop_price),
-            closePosition="true",
+            quantity=qty,
+            reduceOnly="true",
             workingType="MARK_PRICE",
         )
 

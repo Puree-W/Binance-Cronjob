@@ -17,8 +17,10 @@ Strategy modes
   bb          → single BB signal
   ema         → single EMA crossover signal (standalone, not in voting)
   combined    → RSI + EMA must agree (legacy mode)
-  majority    → 2 of 3 (Supertrend + RSI + BB) agree  ← recommended
+  majority    → 2 of 3 (Supertrend + RSI + BB) agree
   confluence  → all 3 (Supertrend + RSI + BB) agree   ← strictest
+  mean_revert → counter-trend: buy oversold bounces in downtrends,
+                sell overbought rejections in uptrends             ← active
 
 Supertrend acts as a trend FILTER (zone-based):
   - votes BUY  continuously while price is in bullish zone (above band)
@@ -220,6 +222,38 @@ def majority_signal(df: pd.DataFrame, cfg: dict) -> Signal:
     return "HOLD"
 
 
+def mean_revert_signal(df: pd.DataFrame, cfg: dict) -> Signal:
+    """
+    Counter-trend mean reversion with inverted Supertrend trend gate.
+
+    Trend gate (PERMISSION):
+      Supertrend = down → only BUY allowed (fade extreme dips in downtrend)
+      Supertrend = up   → only SELL allowed (fade extreme rallies in uptrend)
+
+    Entry timing (TRIGGER): RSI extreme cross OR BB band bounce.
+    Either trigger fires the trade, as long as the trend gate permits it.
+
+    Rationale: pure mean reversion in a directional market gets run over.
+    Requiring an established trend on the wrong side means we only fade
+    after price has stretched far enough to be statistically reverting,
+    not on minor wiggles around the mean.
+    """
+    st = cfg["supertrend"]
+    direction, _ = _compute_supertrend(df, st["period"], st["multiplier"])
+    if len(direction) < 3:
+        return "HOLD"
+    st_dir = direction.iloc[-2]
+
+    rsi_sig = rsi_signal(df, cfg["rsi"]["period"], cfg["rsi"]["oversold"], cfg["rsi"]["overbought"])
+    bb_sig = bb_signal(df, cfg["bb"]["period"], cfg["bb"]["std_dev"])
+
+    if st_dir == "down" and (rsi_sig == "BUY" or bb_sig == "BUY"):
+        return "BUY"
+    if st_dir == "up" and (rsi_sig == "SELL" or bb_sig == "SELL"):
+        return "SELL"
+    return "HOLD"
+
+
 def confluence_signal(df: pd.DataFrame, cfg: dict) -> Signal:
     """All 3 must agree — strictest mode."""
     st = cfg["supertrend"]
@@ -265,7 +299,20 @@ def evaluate(mode: str, df: pd.DataFrame, cfg: dict) -> Signal:
         return majority_signal(df, cfg)
     if mode == "confluence":
         return confluence_signal(df, cfg)
+    if mode == "mean_revert":
+        return mean_revert_signal(df, cfg)
     raise ValueError(f"Unknown strategy mode: {mode!r}")
+
+
+def current_atr(df: pd.DataFrame, period: int) -> float:
+    """ATR value on the last CLOSED candle. Returns 0 if not enough data."""
+    if len(df) < period + 2:
+        return 0.0
+    atr = AverageTrueRange(
+        high=df["high"], low=df["low"], close=df["close"], window=period
+    ).average_true_range()
+    val = atr.iloc[-2]
+    return float(val) if pd.notna(val) else 0.0
 
 
 # ================================================================

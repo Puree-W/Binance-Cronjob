@@ -4,22 +4,28 @@
 # =========================================================
 
 risk:
-  stop_loss_pct: 0.05         # 5% — reachable with 10x leverage (liquidation ~10%)
-  take_profit_pct: 0.10       # 10% — R:R = 1:2 (ได้เปรียบ)
-  order_size_usdt: 100        # notional per trade (testnet)
-  max_open_positions: 2       # per bot
-  daily_loss_limit_pct: 0.05  # 5% of starting balance — kill-switch
+  # Static % SL/TP — used by spot bot. Futures uses ATR-based (below).
+  stop_loss_pct: 0.05
+  take_profit_pct: 0.10
+  # ATR-based SL/TP for futures (adapts to per-symbol volatility)
+  atr_period: 14
+  stop_loss_atr_mult: 2.0     # SL = entry ± 2×ATR
+  take_profit_atr_mult: 4.0   # TP = entry ± 4×ATR (R:R = 1:2)
+  # Cooldown after a stop-out (prevents re-entry into a continuing trend)
+  cooldown_candles: 6         # 6 × 1h = 6h block after SL hit
+  order_size_usdt: 50         # notional per trade (testnet)
+  max_open_positions: 1       # one symbol active (SOLUSDT)
+  daily_loss_limit_pct: 0.05  # 5% of starting balance — kill-switch (futures-wired)
 
 symbols:
-  - BTCUSDT
-  - ETHUSDT
+  - SOLUSDT
 
 # Candle interval used for indicator calculation.
 # Options: 1m, 3m, 5m, 15m, 1h, 4h, 1d
-interval: "15m"
+interval: "1h"
 
 # Loop tick in seconds — ควรตรงกับ interval (15m = 900s)
-loop_seconds: 900
+loop_seconds: 3600
 
 # Verbose logging — true = แสดง indicator ทุก tick, false = แสดงเฉพาะ trade/error
 verbose: true
@@ -64,19 +70,29 @@ spot:
 # ---------------------------------------------------------
 futures:
   enabled: true
-  # Strategy options: supertrend | rsi | bb | ema | combined | majority | confluence
-  strategy: "majority"
-  leverage: 10
+  # Strategy options: supertrend | rsi | bb | ema | combined | majority | confluence | mean_revert
+  #   mean_revert  → counter-trend: fade extreme dips in downtrend, fade rallies in uptrend
+  #                  (Supertrend = trend gate, RSI/BB = entry trigger)
+  strategy: "mean_revert"
+  leverage: 3                 # reduced from 10 — fees/risk drag too high while debugging
   margin_type: "ISOLATED"
+
+  # Direction filter — true/false ทั้งคู่ = trade ทั้ง 2 ฝั่ง
+  #   allow_long=true,  allow_short=true  → trade ทั้ง 2 ฝั่ง (default)
+  #   allow_long=true,  allow_short=false → long-only (เปิดได้เฉพาะ BUY)
+  #   allow_long=false, allow_short=true  → short-only (เปิดได้เฉพาะ SELL)
+  # หมายเหตุ: การปิด position ตรงข้ามตอน flip ทำได้เสมอ ไม่ขึ้นกับ filter นี้
+  allow_long: true
+  allow_short: true
 
   supertrend:
     period: 10
     multiplier: 3.0
 
   rsi:
-    period: 12
-    oversold: 40
-    overbought: 60
+    period: 14
+    oversold: 25      # extremes — fade only when truly oversold
+    overbought: 75    # extremes — fade only when truly overbought
 
   bb:
     period: 20

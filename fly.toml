@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for binance-demo-cronjob on 2026-05-02T21:31:17+07:00
+# fly.toml app configuration file generated for binance-demo-cronjob-dusky-river-105 on 2026-05-10T20:07:43+07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'binance-demo-cronjob'
+app = 'binance-demo-cronjob-dusky-river-105'
 primary_region = 'sin'
 
 [experimental]
